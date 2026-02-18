@@ -1,8 +1,12 @@
 package com.example.adp;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Collection;
+import java.util.SortedSet;
+import java.util.TreeMap;
 
 @RestController
 class HelloController {
@@ -15,11 +19,30 @@ class HelloController {
     public String[] helloAgain() {
         return new String[] { "hello world!", "again", "hang on what's this?", "dice", "prune", "music" };
     }
-    @GetMapping("/pojo")
-    public MyPOJO[] myPojo() {
-        return new MyPOJO[] {
-                new MyPOJO("Josiah", "Brown", 1533877),
-                new MyPOJO("Ronan", "Lopez", 4923743) };
+    //@GetMapping("/pojo")
+    //public MyPOJO[] myPojo() {
+    //    return new MyPOJO[] {
+    //            new MyPOJO("Josiah", "Brown", 1533877),
+    //            new MyPOJO("Ronan", "Lopez", 4923743) };
+    //}
+    @PostMapping("/pojo")
+    public MyPOJO postPojo(@RequestBody MyPOJO body) {
+        long nextId = 1;
+        if (!this.map.isEmpty()) {
+            nextId = ((SortedSet<Long>) this.map.keySet()).last() + 1;
+        }
+        MyPOJO newItem = new MyPOJO(body.getFirstName(), body.getLastName(), nextId);
+        this.map.put(nextId, newItem);
+        return newItem;
+    }
+    @GetMapping("/pojo/{id}")
+    public MyPOJO getById(@PathVariable("id") Long id) {
+        MyPOJO item = map.get(id);
+        if (item == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such id " + id);
+        } else {
+            return item;
+        }
     }
     @GetMapping("/pojo/{first}/{last}/{id}")
     public MyPOJO myPojo( @PathVariable("first") String firstName,
@@ -27,4 +50,19 @@ class HelloController {
                           @PathVariable("id") int idNumber) {
         return new MyPOJO(firstName, lastName, idNumber);
     }
+    @PutMapping("/pojo")
+    public MyPOJO putPojo(@RequestBody MyPOJO body) {
+        this.map.put(body.getIdNumber(), body);
+        return body;
+    }
+    @DeleteMapping("/pojo/{id}")
+    public String[] deletePojo(@PathVariable long id) {
+        if (this.map.remove(id) == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No such id " + id);
+        } else {
+            return new String[] {"item removed"};
+        }
+    }
+
+    private final TreeMap<Long,MyPOJO> map = new TreeMap<>();
 }
